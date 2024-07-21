@@ -6345,6 +6345,7 @@ dependencies = [
  "itertools 0.13.0",
  "libc",
  "metrics-process",
+ "reth-alpen-utils",
  "reth-basic-payload-builder",
  "reth-beacon-consensus",
  "reth-blockchain-tree",
@@ -6408,6 +6409,48 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+]
+
+[[package]]
+name = "reth-alpen-primitives"
+version = "1.0.1"
+dependencies = [
+ "arbitrary",
+ "bytes",
+ "modular-bitfield",
+ "proptest",
+ "proptest-derive 0.5.0",
+ "reth-codecs",
+ "reth-db-api",
+ "reth-primitives",
+ "revm 11.0.0",
+ "serde",
+ "test-fuzz",
+]
+
+[[package]]
+name = "reth-alpen-utils"
+version = "1.0.1"
+dependencies = [
+ "arbitrary",
+ "bytes",
+ "eyre",
+ "modular-bitfield",
+ "proptest",
+ "proptest-derive 0.5.0",
+ "reth-alpen-primitives",
+ "reth-codecs",
+ "reth-db",
+ "reth-db-api",
+ "reth-execution-types",
+ "reth-exex",
+ "reth-node-api",
+ "reth-primitives",
+ "reth-provider",
+ "reth-revm",
+ "serde",
+ "test-fuzz",
+ "tokio",
 ]
 
 [[package]]

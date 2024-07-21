@@ -12,6 +12,9 @@ alloy-primitives.workspace = true
 hashbrown = "0.14.3"
 reth-primitives.workspace = true
 reth-rpc-types.workspace = true
+# reth-trie-common.workspace = true
+# reth-libmdbx.workspace = true
+
 revm = { git = "https://github.com/sp1-patches/revm", branch = "patch-v5.0.0", features = ["std"], default-features = false }
 rlp = "0.5.2"
 serde = { workspace = true }

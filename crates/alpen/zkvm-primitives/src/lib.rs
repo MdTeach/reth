@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 
 /// Necessary information to prove the execution of Ethereum blocks inside SP1.
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ProverRethInput {
+pub struct SP1RethInput {
     /// The Keccak 256-bit hash of the parent block's header, in its entirety.
     pub parent_header: Header,
 
@@ -81,7 +81,7 @@ mod tests{
     #[test]
     fn simple_test(){
         let file = File::open("1.bin").expect("file");
-        let res:ProverRethInput = bincode::deserialize_from(file).expect("failed");
+        let res:SP1RethInput = bincode::deserialize_from(file).expect("failed");
 
         println!("it worked");
     }

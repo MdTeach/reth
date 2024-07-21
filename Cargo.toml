@@ -9,6 +9,8 @@ exclude = [".github/"]
 
 [workspace]
 members = [
+    "crates/alpen/primitives",
+    "crates/alpen/utils",
     "crates/alpen/zkvm-primitives",
     "bin/reth-bench/",
     "bin/reth/",
@@ -267,6 +269,8 @@ codegen-units = 1
 
 [workspace.dependencies]
 # reth
+reth-alpen-primitives = { path = "crates/alpen/primitives" }
+reth-alpen-utils = { path = "crates/alpen/utils" }
 reth = { path = "bin/reth" }
 reth-bench = { path = "bin/reth-bench" }
 reth-auto-seal-consensus = { path = "crates/consensus/auto-seal" }
