@@ -271,6 +271,7 @@ codegen-units = 1
 # reth
 reth-alpen-primitives = { path = "crates/alpen/primitives" }
 reth-alpen-utils = { path = "crates/alpen/utils" }
+zkvm-primitives = { path = "crates/alpen/zkvm-primitives" }
 reth = { path = "bin/reth" }
 reth-bench = { path = "bin/reth-bench" }
 reth-auto-seal-consensus = { path = "crates/consensus/auto-seal" }

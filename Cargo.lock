@@ -6433,8 +6433,10 @@ name = "reth-alpen-utils"
 version = "1.0.1"
 dependencies = [
  "arbitrary",
+ "bincode",
  "bytes",
  "eyre",
+ "hashbrown 0.14.5",
  "modular-bitfield",
  "proptest",
  "proptest-derive 0.5.0",
@@ -6448,9 +6450,13 @@ dependencies = [
  "reth-primitives",
  "reth-provider",
  "reth-revm",
+ "reth-rpc-types",
+ "reth-rpc-types-compat",
  "serde",
+ "serde_json",
  "test-fuzz",
  "tokio",
+ "zkvm-primitives",
 ]
 
 [[package]]
