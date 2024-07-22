@@ -10,7 +10,9 @@ alloy-rpc-types.workspace = true
 anyhow = "1.0.0"
 alloy-primitives.workspace = true
 hashbrown = "0.14.3"
-reth-primitives.workspace = true
+reth-primitives = { path = "../../primitives", default-features = false, features = [
+    "std",
+] }
 reth-rpc-types.workspace = true
 # reth-trie-common.workspace = true
 # reth-libmdbx.workspace = true
