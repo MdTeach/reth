@@ -15,7 +15,14 @@ reth-rpc-types.workspace = true
 # reth-trie-common.workspace = true
 # reth-libmdbx.workspace = true
 
-revm = { git = "https://github.com/sp1-patches/revm", branch = "patch-v5.0.0", features = ["std"], default-features = false }
+# revm = "5.0.0"
+# revm.workspace = true
+# revm = { git = "https://github.com/sp1-patches/revm", branch = "patch-v5.0.0", features = [
+#     "std",
+# ], default-features = false }
+# revm = { version = "5.0", default-features = false }
+
+
 rlp = "0.5.2"
 serde = { workspace = true }
 thiserror = "1.0"

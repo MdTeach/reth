@@ -21,11 +21,11 @@
 pub mod mpt;
 // pub mod processor;
 
-use crate::mpt::MptNode;
-use crate::mpt::StorageEntry;
+use crate::mpt::{MptNode, StorageEntry};
 
 use reth_primitives::{Address, Bytes, Header, TransactionSignedNoHash, Withdrawal, B256};
-use revm::primitives::HashMap;
+// use revm::primitives::HashMap;
+use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 
 /// Necessary information to prove the execution of Ethereum blocks inside SP1.
@@ -71,17 +71,16 @@ pub struct SP1RethInput {
     pub withdrawals: Vec<Withdrawal>,
 }
 
-
 #[cfg(test)]
-mod tests{
+mod tests {
     use std::fs::File;
 
     use super::*;
 
     #[test]
-    fn simple_test(){
+    fn simple_test() {
         let file = File::open("1.bin").expect("file");
-        let res:SP1RethInput = bincode::deserialize_from(file).expect("failed");
+        let res: SP1RethInput = bincode::deserialize_from(file).expect("failed");
 
         println!("it worked");
     }
