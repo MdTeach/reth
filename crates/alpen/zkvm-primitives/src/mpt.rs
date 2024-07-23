@@ -19,6 +19,7 @@
 use alloc::boxed::Box;
 use alloy_primitives::{b256, B256};
 use alloy_rlp::Encodable;
+use alloy_rpc_types::EIP1186AccountProofResponse;
 use core::{
     cell::RefCell,
     cmp,
@@ -33,9 +34,7 @@ use thiserror::Error as ThisError;
 
 use alloy_primitives::{TxNumber, U256};
 use alloy_rlp_derive::{RlpDecodable, RlpEncodable, RlpMaxEncodedLen};
-use reth_rpc_types::EIP1186AccountProofResponse;
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reth_primitives::Address;
 
 pub type StorageEntry = (MptNode, Vec<U256>);
@@ -73,12 +72,7 @@ impl Default for StateAccount {
     /// The default account has a nonce of 0, a balance of 0 Wei, an empty storage root,
     /// and an empty bytecode hash.
     fn default() -> Self {
-        Self {
-            nonce: 0,
-            balance: U256::ZERO,
-            storage_root: EMPTY_ROOT,
-            code_hash: KECCAK_EMPTY,
-        }
+        Self { nonce: 0, balance: U256::ZERO, storage_root: EMPTY_ROOT, code_hash: KECCAK_EMPTY }
     }
 }
 
@@ -120,8 +114,7 @@ pub const KECCAK_EMPTY: B256 =
 /// and is optimized for performance.
 ///
 /// # TODO
-/// - Consider switching the return type to `B256` for consistency with other parts of the
-///   codebase.
+/// - Consider switching the return type to `B256` for consistency with other parts of the codebase.
 #[inline]
 pub fn keccak(data: impl AsRef<[u8]>) -> [u8; 32] {
     // TODO: Remove this benchmarking code once performance testing is complete.
@@ -216,10 +209,7 @@ pub enum MptNodeReference {
 /// `cached_reference` field to `None`.
 impl From<MptNodeData> for MptNode {
     fn from(value: MptNodeData) -> Self {
-        Self {
-            data: value,
-            cached_reference: RefCell::new(None),
-        }
+        Self { data: value, cached_reference: RefCell::new(None) }
     }
 }
 
@@ -239,11 +229,7 @@ impl Encodable for MptNode {
                 out.put_u8(alloy_rlp::EMPTY_STRING_CODE);
             }
             MptNodeData::Branch(nodes) => {
-                alloy_rlp::Header {
-                    list: true,
-                    payload_length: self.payload_length(),
-                }
-                .encode(out);
+                alloy_rlp::Header { list: true, payload_length: self.payload_length() }.encode(out);
                 nodes.iter().for_each(|child| match child {
                     Some(node) => node.reference_encode(out),
                     None => out.put_u8(alloy_rlp::EMPTY_STRING_CODE),
@@ -252,20 +238,12 @@ impl Encodable for MptNode {
                 out.put_u8(alloy_rlp::EMPTY_STRING_CODE);
             }
             MptNodeData::Leaf(prefix, value) => {
-                alloy_rlp::Header {
-                    list: true,
-                    payload_length: self.payload_length(),
-                }
-                .encode(out);
+                alloy_rlp::Header { list: true, payload_length: self.payload_length() }.encode(out);
                 prefix.as_slice().encode(out);
                 value.as_slice().encode(out);
             }
             MptNodeData::Extension(prefix, node) => {
-                alloy_rlp::Header {
-                    list: true,
-                    payload_length: self.payload_length(),
-                }
-                .encode(out);
+                alloy_rlp::Header { list: true, payload_length: self.payload_length() }.encode(out);
                 prefix.as_slice().encode(out);
                 node.reference_encode(out);
             }
@@ -380,10 +358,7 @@ impl MptNode {
     /// storage or transmission purposes.
     #[inline]
     pub fn reference(&self) -> MptNodeReference {
-        self.cached_reference
-            .borrow_mut()
-            .get_or_insert_with(|| self.calc_reference())
-            .clone()
+        self.cached_reference.borrow_mut().get_or_insert_with(|| self.calc_reference()).clone()
     }
 
     /// Computes and returns the 256-bit hash of the node.
@@ -406,11 +381,7 @@ impl MptNode {
 
     /// Encodes the [MptNodeReference] of this node into the `out` buffer.
     fn reference_encode(&self, out: &mut dyn alloy_rlp::BufMut) {
-        match self
-            .cached_reference
-            .borrow_mut()
-            .get_or_insert_with(|| self.calc_reference())
-        {
+        match self.cached_reference.borrow_mut().get_or_insert_with(|| self.calc_reference()) {
             // if the reference is an RLP-encoded byte slice, copy it directly
             MptNodeReference::Bytes(bytes) => out.put_slice(bytes),
             // if the reference is a digest, RLP-encode it with its fixed known length
@@ -423,11 +394,7 @@ impl MptNode {
 
     /// Returns the length of the encoded [MptNodeReference] of this node.
     fn reference_length(&self) -> usize {
-        match self
-            .cached_reference
-            .borrow_mut()
-            .get_or_insert_with(|| self.calc_reference())
-        {
+        match self.cached_reference.borrow_mut().get_or_insert_with(|| self.calc_reference()) {
             MptNodeReference::Bytes(bytes) => bytes.len(),
             MptNodeReference::Digest(_) => 1 + 32,
         }
@@ -827,17 +794,11 @@ impl MptNode {
                 })
                 .collect(),
             MptNodeData::Leaf(_, data) => {
-                vec![format!(
-                    "{} -> {:?}",
-                    nibs,
-                    T::decode(&mut &data[..]).unwrap()
-                )]
+                vec![format!("{} -> {:?}", nibs, T::decode(&mut &data[..]).unwrap())]
             }
-            MptNodeData::Extension(_, node) => node
-                .debug_rlp::<T>()
-                .into_iter()
-                .map(|s| format!("{} {}", nibs, s))
-                .collect(),
+            MptNodeData::Extension(_, node) => {
+                node.debug_rlp::<T>().into_iter().map(|s| format!("{} {}", nibs, s)).collect()
+            }
             MptNodeData::Digest(digest) => vec![format!("#{:#}", digest)],
         }
     }
@@ -892,9 +853,7 @@ pub fn to_encoded_path(mut nibs: &[u8], is_leaf: bool) -> Vec<u8> {
         prefix += 0x10 + nibs[0];
         nibs = &nibs[1..];
     }
-    iter::once(prefix)
-        .chain(nibs.chunks_exact(2).map(|byte| (byte[0] << 4) + byte[1]))
-        .collect()
+    iter::once(prefix).chain(nibs.chunks_exact(2).map(|byte| (byte[0] << 4) + byte[1])).collect()
 }
 
 /// Returns the length of the common prefix.
@@ -926,10 +885,7 @@ fn prefix_nibs(prefix: &[u8]) -> Vec<u8> {
 
 /// Parses proof bytes into a vector of MPT nodes.
 pub fn parse_proof(proof: &[impl AsRef<[u8]>]) -> Result<Vec<MptNode>> {
-    Ok(proof
-        .iter()
-        .map(MptNode::decode)
-        .collect::<Result<Vec<_>, _>>()?)
+    Ok(proof.iter().map(MptNode::decode).collect::<Result<Vec<_>, _>>()?)
 }
 
 /// Creates a Merkle Patricia trie from an EIP-1186 proof.
@@ -993,11 +949,7 @@ pub fn resolve_nodes(root: &MptNode, node_store: &HashMap<MptNodeReference, MptN
         MptNodeData::Branch(children) => {
             let children: Vec<_> = children
                 .iter()
-                .map(|child| {
-                    child
-                        .as_ref()
-                        .map(|node| Box::new(resolve_nodes(node, node_store)))
-                })
+                .map(|child| child.as_ref().map(|node| Box::new(resolve_nodes(node, node_store))))
                 .collect();
             MptNodeData::Branch(children.try_into().unwrap()).into()
         }
@@ -1103,22 +1055,14 @@ pub fn proofs_to_tries(
 
         // assure that slots can be deleted from the storage trie
         for storage_proof in &fini_proofs.storage_proof {
-            add_orphaned_leafs(
-                storage_proof.key.0 .0,
-                &storage_proof.proof,
-                &mut storage_nodes,
-            )?;
+            add_orphaned_leafs(storage_proof.key.0 .0, &storage_proof.proof, &mut storage_nodes)?;
         }
         // create the storage trie, from all the relevant nodes
         let storage_trie = resolve_nodes(&storage_root_node, &storage_nodes);
         assert_eq!(storage_trie.hash(), storage_root);
 
         // convert the slots to a vector of U256
-        let slots = proof
-            .storage_proof
-            .iter()
-            .map(|p| U256::from_be_bytes(p.key.0 .0))
-            .collect();
+        let slots = proof.storage_proof.iter().map(|p| U256::from_be_bytes(p.key.0 .0)).collect();
         storage.insert(address, (storage_trie, slots));
     }
     let state_trie = resolve_nodes(&state_root_node, &state_nodes);
@@ -1163,12 +1107,7 @@ mod tests {
 
     #[test]
     pub fn test_trie_pointer_no_keccak() {
-        let cases = [
-            ("do", "verb"),
-            ("dog", "puppy"),
-            ("doge", "coin"),
-            ("horse", "stallion"),
-        ];
+        let cases = [("do", "verb"), ("dog", "puppy"), ("doge", "coin"), ("horse", "stallion")];
         for (k, v) in cases {
             let node: MptNode =
                 MptNodeData::Leaf(k.as_bytes().to_vec(), v.as_bytes().to_vec()).into();
@@ -1282,9 +1221,7 @@ mod tests {
         let exp_hash = trie.hash();
 
         // replace one node with its digest
-        let MptNodeData::Extension(_, node) = &mut trie.data else {
-            panic!("extension expected")
-        };
+        let MptNodeData::Extension(_, node) = &mut trie.data else { panic!("extension expected") };
         **node = MptNodeData::Digest(node.hash()).into();
         assert!(node.is_digest());
 
@@ -1320,9 +1257,7 @@ mod tests {
             ("menu", "fear"),
         ];
         for (key, val) in &vals {
-            assert!(trie
-                .insert(key.as_bytes(), val.as_bytes().to_vec())
-                .unwrap());
+            assert!(trie.insert(key.as_bytes(), val.as_bytes().to_vec()).unwrap());
         }
 
         let expected = hex!("2bab6cdf91a23ebf3af683728ea02403a98346f99ed668eec572d55c70a4b08f");

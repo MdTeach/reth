@@ -12,14 +12,17 @@ alloy-primitives = { version = "0.7.2", default-features = false, features = [
     "serde",
     "std",
 ] }
-alloy-rpc-types.workspace = true
 anyhow = "1.0.0"
 # alloy-primitives.workspace = true
 hashbrown = "0.14.3"
 reth-primitives = { path = "../../primitives", default-features = false, features = [
     "std",
 ] }
-reth-rpc-types.workspace = true
+alloy-rpc-types = { version = "0.1", default-features = false, features = [
+    "eth",
+] }
+
+# reth-rpc-types.workspace = true
 # reth-trie-common.workspace = true
 # reth-libmdbx.workspace = true
 
