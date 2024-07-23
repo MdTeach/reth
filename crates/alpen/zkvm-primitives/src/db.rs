@@ -16,20 +16,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::mpt::keccak;
-use crate::mpt::StateAccount;
-use crate::mpt::KECCAK_EMPTY;
-use crate::SP1RethInput;
+use std::collections::hash_map::Entry;
+
+use crate::{
+    mpt::{keccak, StateAccount, KECCAK_EMPTY},
+    SP1RethInput,
+};
 
 use anyhow::{anyhow, Result};
-use hashbrown::hash_map::Entry;
-use reth_primitives::revm_primitives::{AccountInfo, Bytecode};
-use reth_primitives::Bytes;
-use reth_primitives::{Address, B256, U256};
-use revm::db::AccountState;
-use revm::db::DbAccount;
-use revm::db::InMemoryDB;
-use revm::primitives::HashMap;
+// use hashbrown::hash_map::Entry;
+use reth_primitives::{Address, Bytes, B256, U256};
+use reth_revm::revm::{
+    db::{AccountState, DbAccount, InMemoryDB},
+    primitives::{AccountInfo, Bytecode, HashMap},
+};
 
 /// A helper trait to extend [InMemoryDB] with additional functionality.
 pub trait InMemoryDBHelper {
@@ -54,11 +54,8 @@ pub trait InMemoryDBHelper {
 impl InMemoryDBHelper for InMemoryDB {
     fn initialize(input: &mut SP1RethInput) -> Result<Self> {
         // For each contract's byte code, hash it and store it in a map.
-        let contracts: HashMap<B256, Bytes> = input
-            .contracts
-            .iter()
-            .map(|bytes| (keccak(bytes).into(), bytes.clone()))
-            .collect();
+        let contracts: HashMap<B256, Bytes> =
+            input.contracts.iter().map(|bytes| (keccak(bytes).into(), bytes.clone())).collect();
 
         // For each account, load the information into the database.
         let mut accounts = HashMap::with_capacity(input.parent_storage.len());
@@ -86,9 +83,8 @@ impl InMemoryDBHelper for InMemoryDB {
 
             let mut storage = HashMap::with_capacity(slots.len());
             for slot in slots {
-                let value: U256 = storage_trie
-                    .get_rlp(&keccak(slot.to_be_bytes::<32>()))?
-                    .unwrap_or_default();
+                let value: U256 =
+                    storage_trie.get_rlp(&keccak(slot.to_be_bytes::<32>()))?.unwrap_or_default();
                 storage.insert(*slot, value);
             }
 
@@ -107,21 +103,16 @@ impl InMemoryDBHelper for InMemoryDB {
 
         // Insert ancestor headers into the database.
         let mut block_hashes = HashMap::with_capacity(input.ancestor_headers.len() + 1);
-        block_hashes.insert(
-            U256::from(input.parent_header.number),
-            input.parent_header.hash_slow(),
-        );
+        block_hashes
+            .insert(U256::from(input.parent_header.number), input.parent_header.hash_slow());
         let mut prev = &input.parent_header;
         for current in &input.ancestor_headers {
             let current_hash = current.hash_slow();
             if prev.parent_hash != current_hash {
-                panic!(
-                    "Invalid chain: {} is not the parent of {}",
-                    current.number, prev.number
-                );
+                panic!("Invalid chain: {} is not the parent of {}", current.number, prev.number);
             }
-            if input.parent_header.number < current.number
-                || input.parent_header.number - current.number >= 256
+            if input.parent_header.number < current.number ||
+                input.parent_header.number - current.number >= 256
             {
                 panic!(
                     "Invalid chain: {} is not one of the {} most recent blocks",
@@ -133,11 +124,7 @@ impl InMemoryDBHelper for InMemoryDB {
         }
 
         // Return the DB.
-        Ok(InMemoryDB {
-            accounts,
-            block_hashes,
-            ..Default::default()
-        })
+        Ok(InMemoryDB { accounts, block_hashes, ..Default::default() })
     }
 
     fn get_account_info(&self, address: Address) -> Result<Option<AccountInfo>> {

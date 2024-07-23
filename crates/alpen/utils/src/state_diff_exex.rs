@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write, sync::Arc};
 
-use hashbrown::HashMap;
+// use hashbrown::HashMap;
 use reth_alpen_primitives::state_diff::{StateDiff, StateDiffOp};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
@@ -10,6 +10,7 @@ use reth_revm::db::BundleState;
 use reth_rpc_types::EIP1186AccountProofResponse;
 use reth_rpc_types_compat::proof::from_primitive_account_proof;
 use serde_json::to_string;
+use std::collections::HashMap;
 use tokio::sync::mpsc;
 use zkvm_primitives::{mpt::proofs_to_tries, SP1RethInput};
 

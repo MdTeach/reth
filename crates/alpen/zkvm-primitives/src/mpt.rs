@@ -26,7 +26,8 @@ use core::{
     fmt::{Debug, Write},
     iter, mem,
 };
-use hashbrown::HashMap;
+// use hashbrown::HashMap;
+use std::collections::HashMap;
 
 use rlp::{Decodable, DecoderError, Prototype, Rlp};
 use serde::{Deserialize, Serialize};

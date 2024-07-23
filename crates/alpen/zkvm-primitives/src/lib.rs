@@ -17,7 +17,7 @@
 // limitations under the License.
 
 // pub mod alloy2reth;
-// pub mod db;
+pub mod db;
 pub mod mpt;
 // pub mod processor;
 
@@ -25,7 +25,9 @@ use crate::mpt::{MptNode, StorageEntry};
 
 use reth_primitives::{Address, Bytes, Header, TransactionSignedNoHash, Withdrawal, B256};
 // use revm::primitives::HashMap;
-use hashbrown::HashMap;
+// use hashbrown::HashMap;
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 /// Necessary information to prove the execution of Ethereum blocks inside SP1.
