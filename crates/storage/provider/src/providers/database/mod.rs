@@ -512,6 +512,9 @@ impl<DB: Database> StageCheckpointReader for ProviderFactory<DB> {
     fn get_stage_checkpoint_progress(&self, id: StageId) -> ProviderResult<Option<Vec<u8>>> {
         self.provider()?.get_stage_checkpoint_progress(id)
     }
+    fn get_all_checkpoints(&self) -> ProviderResult<Vec<(String, StageCheckpoint)>> {
+        self.provider()?.get_all_checkpoints()
+    }
 }
 
 impl<DB: Database> EvmEnvProvider for ProviderFactory<DB> {
@@ -581,6 +584,10 @@ impl<DB: Database> PruneCheckpointReader for ProviderFactory<DB> {
         segment: PruneSegment,
     ) -> ProviderResult<Option<PruneCheckpoint>> {
         self.provider()?.get_prune_checkpoint(segment)
+    }
+
+    fn get_prune_checkpoints(&self) -> ProviderResult<Vec<(PruneSegment, PruneCheckpoint)>> {
+        self.provider()?.get_prune_checkpoints()
     }
 }
 
@@ -767,7 +774,7 @@ mod tests {
         // Checkpoint and no gap
         let mut static_file_writer =
             provider.static_file_provider().latest_writer(StaticFileSegment::Headers).unwrap();
-        static_file_writer.append_header(head.header().clone(), U256::ZERO, head.hash()).unwrap();
+        static_file_writer.append_header(head.header(), U256::ZERO, &head.hash()).unwrap();
         static_file_writer.commit().unwrap();
         drop(static_file_writer);
 

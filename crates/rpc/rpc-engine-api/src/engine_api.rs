@@ -65,7 +65,7 @@ struct EngineApiInner<Provider, EngineT: EngineTypes> {
 impl<Provider, EngineT> EngineApi<Provider, EngineT>
 where
     Provider: HeaderProvider + BlockReader + StateProviderFactory + EvmEnvProvider + 'static,
-    EngineT: EngineTypes + 'static,
+    EngineT: EngineTypes,
 {
     /// Create new instance of [`EngineApi`].
     pub fn new(
@@ -540,7 +540,7 @@ where
         let local_hash = self
             .inner
             .provider
-            .block_hash(terminal_block_number.to())
+            .block_hash(terminal_block_number)
             .map_err(|err| EngineApiError::Internal(Box::new(err)))?;
 
         // Transition configuration exchange is successful if block hashes match
@@ -612,7 +612,7 @@ where
 impl<Provider, EngineT> EngineApiServer<EngineT> for EngineApi<Provider, EngineT>
 where
     Provider: HeaderProvider + BlockReader + StateProviderFactory + EvmEnvProvider + 'static,
-    EngineT: EngineTypes + 'static,
+    EngineT: EngineTypes,
 {
     /// Handler for `engine_newPayloadV1`
     /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_newpayloadv1>
@@ -1154,7 +1154,7 @@ mod tests {
                     .ttd()
                     .unwrap(),
                 terminal_block_hash: consensus_terminal_block.hash(),
-                terminal_block_number: U64::from(terminal_block_number),
+                terminal_block_number,
             };
 
             // Unknown block number
@@ -1196,7 +1196,7 @@ mod tests {
                     .ttd()
                     .unwrap(),
                 terminal_block_hash: terminal_block.hash(),
-                terminal_block_number: U64::from(terminal_block_number),
+                terminal_block_number,
             };
 
             handle.provider.add_block(terminal_block.hash(), terminal_block.unseal());

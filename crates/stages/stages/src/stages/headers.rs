@@ -138,7 +138,7 @@ where
             })?;
 
             // Append to Headers segment
-            writer.append_header(header, td, header_hash)?;
+            writer.append_header(&header, td, &header_hash)?;
         }
 
         info!(target: "sync::stages::headers", total = total_headers, "Writing headers hash index");
@@ -382,7 +382,7 @@ mod tests {
     use reth_provider::{BlockWriter, ProviderFactory, StaticFileProviderFactory};
     use reth_stages_api::StageUnitCheckpoint;
     use reth_testing_utils::generators::{self, random_header, random_header_range};
-    use reth_trie::{updates::TrieUpdates, HashedPostState};
+    use reth_trie::{updates::TrieUpdates, HashedPostStateSorted};
     use test_runner::HeadersTestRunner;
 
     mod test_runner {
@@ -630,7 +630,7 @@ mod tests {
             .append_blocks_with_state(
                 sealed_blocks,
                 ExecutionOutcome::default(),
-                HashedPostState::default(),
+                HashedPostStateSorted::default(),
                 TrieUpdates::default(),
             )
             .unwrap();
