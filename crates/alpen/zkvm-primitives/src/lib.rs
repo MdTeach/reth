@@ -19,7 +19,7 @@
 // pub mod alloy2reth;
 pub mod db;
 pub mod mpt;
-// pub mod processor;
+pub mod processor;
 
 use crate::mpt::{MptNode, StorageEntry};
 

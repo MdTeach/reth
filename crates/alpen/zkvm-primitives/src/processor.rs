@@ -16,24 +16,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::mpt::keccak;
-use crate::mpt::RlpBytes;
-use crate::mpt::StateAccount;
-use crate::SP1RethInput;
+use crate::{
+    mpt::{keccak, RlpBytes, StateAccount},
+    SP1RethInput,
+};
 
+use alloy_eips::eip1559::BaseFeeParams;
+use alloy_rlp::BufMut;
 use anyhow::anyhow;
-use reth_primitives::proofs::ordered_trie_root_with_encoder;
-use reth_primitives::revm_primitives::Account;
-use reth_primitives::{Address, Bloom, Transaction, TransactionKind, TransactionSigned};
-use reth_primitives::{BaseFeeParams, Receipt, ReceiptWithBloom};
-use reth_primitives::{Header, U256};
-use revm::db::AccountState;
-use revm::db::InMemoryDB;
-use revm::interpreter::Host;
-use revm::primitives::{SpecId, TransactTo, TxEnv};
-use revm::{Database, DatabaseCommit, Evm};
-use std::mem;
-use std::mem::take;
+use reth_primitives::{
+    revm_primitives::Account, Address, Bloom, Header, Receipt, ReceiptWithBloom, Transaction,
+    TransactionSigned, TxKind as TransactionKind, U256,
+};
+use reth_trie_common::root::ordered_trie_root_with_encoder;
+use revm::{
+    db::{AccountState, InMemoryDB},
+    interpreter::Host,
+    primitives::{SpecId, TransactTo, TxEnv},
+    Database, DatabaseCommit, Evm,
+};
+use std::{mem, mem::take};
 
 /// The divisor for the gas limit bound.
 ///
@@ -195,7 +197,7 @@ where
             }
 
             // Setup EVM from tx.
-            fill_eth_tx_env(&mut evm.env_mut().tx, &tx.transaction, tx_from);
+            fill_eth_tx_env(&mut evm.context.env_mut().tx, &tx.transaction, tx_from);
             // Execute transaction.
             let res = evm
                 .transact()
@@ -214,12 +216,7 @@ where
                 tx_type: tx.transaction.tx_type(),
                 success: res.result.is_success(),
                 cumulative_gas_used: cumulative_gas_used.try_into().unwrap(),
-                logs: res
-                    .result
-                    .logs()
-                    .into_iter()
-                    .map(|log| log.into())
-                    .collect(),
+                logs: res.result.logs().into_iter().map(|log| log.clone().into()).collect(),
             };
 
             // Update logs bloom.
@@ -234,9 +231,8 @@ where
         // Process consensus layer withdrawals.
         for withdrawal in self.input.withdrawals.iter() {
             // Convert withdrawal amount (in gwei) to wei.
-            let amount_wei = gwei_to_wei
-                .checked_mul(withdrawal.amount.try_into().unwrap())
-                .unwrap();
+            let amount_wei =
+                gwei_to_wei.checked_mul(withdrawal.amount.try_into().unwrap()).unwrap();
 
             increase_account_balance(&mut evm.context.evm.db, withdrawal.address, amount_wei)
                 .unwrap();
@@ -254,14 +250,15 @@ where
         h.receipts_root = ordered_trie_root_with_encoder(&receipts, |receipt, buf| {
             receipt.encode_inner(buf, false);
         });
-        h.withdrawals_root = Some(ordered_trie_root_with_encoder(
-            &self.input.withdrawals,
-            |withdrawal, buf| buf.put_slice(&withdrawal.to_rlp()),
-        ));
+        h.withdrawals_root =
+            Some(ordered_trie_root_with_encoder(&self.input.withdrawals, |withdrawal, buf| {
+                buf.put_slice(&withdrawal.to_rlp())
+            }));
         h.logs_bloom = logs_bloom;
         h.gas_used = cumulative_gas_used.try_into().unwrap();
 
-        self.db = Some(evm.context.evm.db);
+        // TODO: fixme
+        // self.db = Some(evm.context.evm.db);
     }
 }
 
@@ -300,9 +297,7 @@ impl EvmProcessor<InMemoryDB> {
                     if value == &U256::ZERO {
                         storage_trie.delete(&storage_trie_index).unwrap();
                     } else {
-                        storage_trie
-                            .insert_rlp(&storage_trie_index, *value)
-                            .unwrap();
+                        storage_trie.insert_rlp(&storage_trie_index, *value).unwrap();
                     }
                 }
 
@@ -315,9 +310,7 @@ impl EvmProcessor<InMemoryDB> {
                 storage_root,
                 code_hash: account.info.code_hash,
             };
-            state_trie
-                .insert_rlp(&state_trie_index, state_account)
-                .unwrap();
+            state_trie.insert_rlp(&state_trie_index, state_account).unwrap();
         }
 
         // Update state trie root in header.
@@ -338,7 +331,7 @@ fn fill_eth_tx_env(tx_env: &mut TxEnv, essence: &Transaction, caller: Address) {
             tx_env.transact_to = if let TransactionKind::Call(to_addr) = tx.to {
                 TransactTo::Call(to_addr)
             } else {
-                TransactTo::create()
+                TransactTo::Create
             };
             tx_env.value = tx.value.into();
             tx_env.data = tx.input.clone();
@@ -346,32 +339,29 @@ fn fill_eth_tx_env(tx_env: &mut TxEnv, essence: &Transaction, caller: Address) {
             tx_env.nonce = Some(tx.nonce);
             tx_env.access_list.clear();
         }
-        Transaction::Eip2930(tx) => {
-            tx_env.caller = caller;
-            tx_env.gas_limit = tx.gas_limit;
-            tx_env.gas_price = U256::from(tx.gas_price);
-            tx_env.gas_priority_fee = None;
-            tx_env.transact_to = if let TransactionKind::Call(to_addr) = tx.to {
-                TransactTo::Call(to_addr)
-            } else {
-                TransactTo::create()
-            };
-            tx_env.value = tx.value.into();
-            tx_env.data = tx.input.clone();
-            tx_env.chain_id = Some(tx.chain_id);
-            tx_env.nonce = Some(tx.nonce);
-            tx_env.access_list = tx
-                .access_list
-                .0
-                .iter()
-                .map(|item| {
-                    (
-                        item.address,
-                        item.storage_keys.iter().map(|key| (*key).into()).collect(),
-                    )
-                })
-                .collect();
-        }
+        // Transaction::Eip2930(tx) => {
+        //     tx_env.caller = caller;
+        //     tx_env.gas_limit = tx.gas_limit;
+        //     tx_env.gas_price = U256::from(tx.gas_price);
+        //     tx_env.gas_priority_fee = None;
+        //     tx_env.transact_to = if let TransactionKind::Call(to_addr) = tx.to {
+        //         TransactTo::Call(to_addr)
+        //     } else {
+        //         TransactTo::Create
+        //     };
+        //     tx_env.value = tx.value.into();
+        //     tx_env.data = tx.input.clone();
+        //     tx_env.chain_id = Some(tx.chain_id);
+        //     tx_env.nonce = Some(tx.nonce);
+        //     tx_env.access_list = tx
+        //         .access_list
+        //         .0
+        //         .iter()
+        //         .map(|item| {
+        //             (item.address, item.storage_keys.iter().map(|key| (*key).into()).collect())
+        //         })
+        //         .collect();
+        // }
         Transaction::Eip1559(tx) => {
             tx_env.caller = caller;
             tx_env.gas_limit = tx.gas_limit;
@@ -380,25 +370,24 @@ fn fill_eth_tx_env(tx_env: &mut TxEnv, essence: &Transaction, caller: Address) {
             tx_env.transact_to = if let TransactionKind::Call(to_addr) = tx.to {
                 TransactTo::Call(to_addr)
             } else {
-                TransactTo::create()
+                TransactTo::Create
             };
             tx_env.value = tx.value.into();
             tx_env.data = tx.input.clone();
             tx_env.chain_id = Some(tx.chain_id);
             tx_env.nonce = Some(tx.nonce);
-            tx_env.access_list = tx
-                .access_list
-                .0
-                .iter()
-                .map(|item| {
-                    (
-                        item.address,
-                        item.storage_keys.iter().map(|key| (*key).into()).collect(),
-                    )
-                })
-                .collect();
+            tx_env.access_list = Vec::new();
+            // tx_env.access_list = tx
+            //     .access_list
+            //     .0
+            //     .iter()
+            //     .map(|item| {
+            //         (item.address, item.storage_keys.iter().map(|key| (*key).into()).collect())
+            //     })
+            //     .collect();
         }
         Transaction::Eip4844(_) => todo!(),
+        _ => todo!(),
     };
 }
 
@@ -415,11 +404,7 @@ where
     let mut account: Account = db
         .basic(address)
         .map_err(|db_err| {
-            anyhow!(
-                "Error increasing account balance for {}: {:?}",
-                address,
-                db_err
-            )
+            anyhow!("Error increasing account balance for {}: {:?}", address, db_err)
         })?
         .unwrap_or_default()
         .into();

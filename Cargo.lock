@@ -11544,6 +11544,7 @@ dependencies = [
 name = "zkvm-primitives"
 version = "0.1.0"
 dependencies = [
+ "alloy-eips 0.2.0",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rlp-derive",
@@ -11552,6 +11553,7 @@ dependencies = [
  "bincode",
  "hex-literal",
  "reth-primitives",
+ "reth-trie-common",
  "revm",
  "rlp",
  "serde",
