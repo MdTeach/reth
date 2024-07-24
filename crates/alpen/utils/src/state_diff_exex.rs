@@ -1,14 +1,18 @@
 use std::{fs::File, io::Write, sync::Arc};
 
 // use hashbrown::HashMap;
+use alloy_rpc_types::EIP1186AccountProofResponse;
 use reth_alpen_primitives::state_diff::{StateDiff, StateDiffOp};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_primitives::{Address, TransactionSignedNoHash, B256};
 use reth_provider::{BlockReader, StateProviderFactory};
 use reth_revm::db::BundleState;
-use reth_rpc_types::EIP1186AccountProofResponse;
 use reth_rpc_types_compat::proof::from_primitive_account_proof;
+// use reth_rpc_types_compat::proof::from_primitive_account_proof;
+// use alloy_rpc_types::{fr};
+// use reth_rpc_types::EIP1186AccountProofResponse;
+// use reth_rpc_types_compat::proof::from_primitive_account_proof;
 use serde_json::to_string;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
@@ -60,7 +64,11 @@ pub async fn state_diff_exex<Node: FullNodeComponents>(
                     let proof = previous_provider
                         .proof(&previous_bundle_state, address.clone(), &[])
                         .unwrap();
+
                     let proof = from_primitive_account_proof(proof);
+                    let proof_str = serde_json::to_string(&proof).unwrap();
+                    let proof: EIP1186AccountProofResponse =
+                        serde_json::from_str::<EIP1186AccountProofResponse>(&proof_str).unwrap();
                     parent_proofs.insert(address.clone(), proof);
                 }
 
@@ -69,33 +77,34 @@ pub async fn state_diff_exex<Node: FullNodeComponents>(
                         .proof(&current_bundle_state, address.clone(), &[])
                         .unwrap();
                     let proof = from_primitive_account_proof(proof);
+                    let proof_str = serde_json::to_string(&proof).unwrap();
+                    let proof: EIP1186AccountProofResponse =
+                        serde_json::from_str::<EIP1186AccountProofResponse>(&proof_str).unwrap();
                     current_proofs.insert(address.clone(), proof);
                 }
 
                 // TODO: continue from here:
-                // let (state_trie, storage) = proofs_to_tries(
-                //     prev_state_root.into(),
-                //     parent_proofs.clone(),
-                //     current_proofs.clone(),
-                // )
-                // .unwrap();
+                let (state_trie, storage) = proofs_to_tries(
+                    prev_state_root.into(),
+                    parent_proofs.clone(),
+                    current_proofs.clone(),
+                )
+                .unwrap();
 
-                let input: SP1RethInput = todo!();
-
-                // let input = SP1RethInput {
-                //     beneficiary: current_block.header.beneficiary,
-                //     gas_limit: current_block.gas_limit.try_into().unwrap(),
-                //     timestamp: current_block.header.timestamp.try_into().unwrap(),
-                //     extra_data: current_block.header.extra_data,
-                //     mix_hash: current_block.header.mix_hash,
-                //     transactions: current_block_txns,
-                //     withdrawals: Vec::new(),
-                //     parent_state_trie: state_trie,
-                //     parent_storage: storage,
-                //     contracts: Default::default(),
-                //     parent_header: prev_block.header,
-                //     ancestor_headers: Default::default(),
-                // };
+                let input = SP1RethInput {
+                    beneficiary: current_block.header.beneficiary,
+                    gas_limit: current_block.gas_limit.try_into().unwrap(),
+                    timestamp: current_block.header.timestamp.try_into().unwrap(),
+                    extra_data: current_block.header.extra_data,
+                    mix_hash: current_block.header.mix_hash,
+                    transactions: current_block_txns,
+                    withdrawals: Vec::new(),
+                    parent_state_trie: state_trie,
+                    parent_storage: storage,
+                    contracts: Default::default(),
+                    parent_header: prev_block.header,
+                    ancestor_headers: Default::default(),
+                };
 
                 println!("input generation done now saving the file...");
                 let json_str = to_string(&input).unwrap();
