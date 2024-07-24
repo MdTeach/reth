@@ -22,9 +22,10 @@ alloy-rpc-types = { version = "0.1", default-features = false, features = [
     "eth",
 ] }
 
-reth-revm = { path = "../../revm", default-features = false, features = [
-    "std",
-] }
+revm = { version = "12.1.0", default-features = false }
+# reth-revm = { path = "../../revm", default-features = false, features = [
+#     "std",
+# ] }
 # reth-rpc-types.workspace = true
 # reth-trie-common.workspace = true
 # reth-libmdbx.workspace = true

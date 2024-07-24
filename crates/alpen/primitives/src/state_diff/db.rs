@@ -215,13 +215,12 @@ fn to_account_status(status: u64) -> AccountStatus {
     }
 }
 
-
 // db related custom trait impls
 
 impl Compress for DbStateDiff {
     type Compressed = Vec<u8>;
     fn compress_to_buf<B: bytes::BufMut + AsMut<[u8]>>(self, buf: &mut B) {
-        let _ = Compact::to_compact(self, buf);
+        let _ = Compact::to_compact(&self, buf);
     }
 }
 

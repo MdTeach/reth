@@ -73,27 +73,29 @@ pub async fn state_diff_exex<Node: FullNodeComponents>(
                 }
 
                 // TODO: continue from here:
-                let (state_trie, storage) = proofs_to_tries(
-                    prev_state_root.into(),
-                    parent_proofs.clone(),
-                    current_proofs.clone(),
-                )
-                .unwrap();
+                // let (state_trie, storage) = proofs_to_tries(
+                //     prev_state_root.into(),
+                //     parent_proofs.clone(),
+                //     current_proofs.clone(),
+                // )
+                // .unwrap();
 
-                let input = SP1RethInput {
-                    beneficiary: current_block.header.beneficiary,
-                    gas_limit: current_block.gas_limit.try_into().unwrap(),
-                    timestamp: current_block.header.timestamp.try_into().unwrap(),
-                    extra_data: current_block.header.extra_data,
-                    mix_hash: current_block.header.mix_hash,
-                    transactions: current_block_txns,
-                    withdrawals: Vec::new(),
-                    parent_state_trie: state_trie,
-                    parent_storage: storage,
-                    contracts: Default::default(),
-                    parent_header: prev_block.header,
-                    ancestor_headers: Default::default(),
-                };
+                let input: SP1RethInput = todo!();
+
+                // let input = SP1RethInput {
+                //     beneficiary: current_block.header.beneficiary,
+                //     gas_limit: current_block.gas_limit.try_into().unwrap(),
+                //     timestamp: current_block.header.timestamp.try_into().unwrap(),
+                //     extra_data: current_block.header.extra_data,
+                //     mix_hash: current_block.header.mix_hash,
+                //     transactions: current_block_txns,
+                //     withdrawals: Vec::new(),
+                //     parent_state_trie: state_trie,
+                //     parent_storage: storage,
+                //     contracts: Default::default(),
+                //     parent_header: prev_block.header,
+                //     ancestor_headers: Default::default(),
+                // };
 
                 println!("input generation done now saving the file...");
                 let json_str = to_string(&input).unwrap();

@@ -26,7 +26,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 // use hashbrown::hash_map::Entry;
 use reth_primitives::{Address, Bytes, B256, U256};
-use reth_revm::revm::{
+use revm::{
     db::{AccountState, DbAccount, InMemoryDB},
     primitives::{AccountInfo, Bytecode, HashMap},
 };
