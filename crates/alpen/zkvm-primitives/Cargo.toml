@@ -24,7 +24,8 @@ alloy-rpc-types = { version = "0.1", default-features = false, features = [
 alloy-eips.workspace = true
 reth-trie-common.workspace = true
 
-revm = { version = "12.1.0", default-features = false, features = ["std"] }
+# revm = { version = "5.0.0", default-features = false, features = ["std"] }
+revm = { version = "12.1.0", default-features = false }
 # reth-revm = { path = "../../revm", default-features = false, features = [
 #     "std",
 # ] }
