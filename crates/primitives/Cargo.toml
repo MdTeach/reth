@@ -34,6 +34,8 @@ secp256k1 = { workspace = true, features = [
     "recovery",
     "rand",
 ] }
+k256 = { version = "0.13.3", features = ["ecdsa"] }
+
 # for eip-4844
 c-kzg = { workspace = true, features = ["serde"], optional = true }
 
@@ -117,4 +119,3 @@ harness = false
 name = "validate_blob_tx"
 required-features = ["arbitrary", "c-kzg"]
 harness = false
-

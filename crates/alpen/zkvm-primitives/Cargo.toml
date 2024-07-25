@@ -26,6 +26,10 @@ reth-trie-common.workspace = true
 
 # revm = { version = "5.0.0", default-features = false, features = ["std"] }
 revm = { version = "12.1.0", default-features = false }
+k256 = { version = "=0.13.3", features = [
+    "std",
+    "ecdsa",
+], default_features = false }
 # reth-revm = { path = "../../revm", default-features = false, features = [
 #     "std",
 # ] }
