@@ -53,6 +53,7 @@ pub const MINIMUM_GAS_LIMIT: u64 = 5000;
 pub const MAXIMUM_EXTRA_DATA_SIZE: usize = 32;
 
 /// A processor that executes EVM transactions.
+#[derive(Clone)]
 pub struct EvmProcessor<D> {
     /// An input containing all necessary data to execute the block.
     pub input: SP1RethInput,
@@ -135,7 +136,7 @@ impl<D> EvmProcessor<D> {
     }
 }
 
-impl<D: Database + DatabaseCommit> EvmProcessor<D>
+impl<D: Database + DatabaseCommit + Clone> EvmProcessor<D>
 where
     <D as Database>::Error: core::fmt::Debug,
 {
@@ -259,6 +260,7 @@ where
         h.gas_used = cumulative_gas_used.try_into().unwrap();
 
         // TODO: fixme
+        self.db = Some(evm.context.evm.db.clone());
         // self.db = Some(evm.context.evm.db);
     }
 }
@@ -317,8 +319,6 @@ impl EvmProcessor<InMemoryDB> {
         // Update state trie root in header.
         let header = self.header.as_mut().expect("Header not initialized");
         header.state_root = state_trie.hash();
-
-        println!("{:?}", header);
     }
 }
 

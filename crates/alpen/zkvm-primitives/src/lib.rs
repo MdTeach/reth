@@ -78,12 +78,26 @@ pub struct SP1RethInput {
 mod tests {
     use std::fs::File;
 
+    use db::InMemoryDBHelper;
+    use processor::EvmProcessor;
+    use revm::InMemoryDB;
+
     use super::*;
 
     #[test]
     fn simple_test() {
         let file = File::open("1.bin").expect("file");
-        let res: SP1RethInput = bincode::deserialize_from(file).expect("failed");
+        let mut input: SP1RethInput = bincode::deserialize_from(file).expect("failed");
+
+        // Initialize the database.
+        let db = InMemoryDB::initialize(&mut input).unwrap();
+
+        // Execute the block.
+        let mut executor = EvmProcessor::<InMemoryDB> { input, db: Some(db), header: None };
+
+        executor.initialize();
+        executor.execute();
+        executor.finalize();
 
         println!("it worked");
     }
