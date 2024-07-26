@@ -88,6 +88,7 @@ mod tests {
     fn simple_test() {
         let file = File::open("1.bin").expect("file");
         let mut input: SP1RethInput = bincode::deserialize_from(file).expect("failed");
+        println!("aheader: {:?} ", input.ancestor_headers);
 
         // Initialize the database.
         let db = InMemoryDB::initialize(&mut input).unwrap();
@@ -99,6 +100,8 @@ mod tests {
         executor.execute();
         executor.finalize();
 
-        println!("it worked");
+        let res = executor.header.unwrap().state_root;
+
+        println!("it worked res {:?}", res);
     }
 }
