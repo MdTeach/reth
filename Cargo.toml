@@ -11,6 +11,8 @@ exclude = [".github/"]
 members = [
     "bin/reth-bench/",
     "bin/reth/",
+    "crates/alpen/primitives",
+    "crates/alpen/utils",
     "crates/blockchain-tree/",
     "crates/blockchain-tree-api/",
     "crates/chainspec/",
@@ -267,6 +269,8 @@ codegen-units = 1
 [workspace.dependencies]
 # reth
 reth = { path = "bin/reth" }
+reth-alpen-primitives = { path = "crates/alpen/primitives" }
+reth-alpen-utils = { path = "crates/alpen/utils" }
 reth-bench = { path = "bin/reth-bench" }
 reth-auto-seal-consensus = { path = "crates/consensus/auto-seal" }
 reth-basic-payload-builder = { path = "crates/payload/basic" }

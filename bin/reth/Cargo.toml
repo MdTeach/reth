@@ -71,6 +71,7 @@ reth-engine-util.workspace = true
 reth-prune.workspace = true
 reth-stages-api.workspace = true
 reth-optimism-cli = { workspace = true, optional = true }
+reth-alpen-utils = { workspace = true, optional = true }
 
 # crypto
 alloy-rlp.workspace = true
@@ -149,6 +150,10 @@ optimism = [
 # no-op feature flag for switching between the `optimism` and default functionality in CI matrices
 ethereum = []
 
+alpen = [
+    "reth-alpen-utils"
+]
+
 [[bin]]
 name = "reth"
 path = "src/main.rs"
@@ -157,3 +162,9 @@ path = "src/main.rs"
 name = "op-reth"
 path = "src/optimism.rs"
 required-features = ["optimism"]
+
+[[bin]]
+name = "alpen-reth"
+path = "src/alpen.rs"
+required-features = ["alpen"]
+
