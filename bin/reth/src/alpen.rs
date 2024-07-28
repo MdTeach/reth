@@ -14,6 +14,7 @@ compile_error!("Cannot build the `alpen-reth` binary with the `alpen` feature fl
 #[cfg(feature = "alpen")]
 fn main() {
     use reth::cli::Cli;
+    use reth_alpen_utils::prover_input_exex;
     use reth_node_ethereum::EthereumNode;
 
     sigsegv_handler::install();
@@ -26,7 +27,7 @@ fn main() {
     if let Err(err) = Cli::parse_args().run(|builder, _| async {
         let handle = builder
             .node(EthereumNode::default())
-            .install_exex("test", |ctx| async {
+            .install_exex("state_diff", |ctx| async {
                 let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
                 // TODO: sync to db
@@ -37,6 +38,10 @@ fn main() {
                 });
 
                 Ok(state_diff_exex(ctx, tx))
+            })
+            .install_exex("prover_input", |ctx| async {
+                let (tx, _) = tokio::sync::mpsc::unbounded_channel();
+                Ok(prover_input_exex(ctx, tx))
             })
             .launch()
             .await?;
