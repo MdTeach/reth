@@ -39,10 +39,7 @@ fn main() {
 
                 Ok(state_diff_exex(ctx, tx))
             })
-            .install_exex("prover_input", |ctx| async {
-                let (tx, _) = tokio::sync::mpsc::unbounded_channel();
-                Ok(prover_input_exex(ctx, tx))
-            })
+            .install_exex("prover_input", |ctx| async { Ok(prover_input_exex(ctx)) })
             .launch()
             .await?;
         handle.node_exit_future.await

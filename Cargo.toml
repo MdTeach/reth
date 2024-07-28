@@ -13,6 +13,7 @@ members = [
     "bin/reth/",
     "crates/alpen/primitives",
     "crates/alpen/utils",
+    "crates/alpen/zkvm-primitives",
     "crates/blockchain-tree/",
     "crates/blockchain-tree-api/",
     "crates/chainspec/",
@@ -271,6 +272,7 @@ codegen-units = 1
 reth = { path = "bin/reth" }
 reth-alpen-primitives = { path = "crates/alpen/primitives" }
 reth-alpen-utils = { path = "crates/alpen/utils" }
+zkvm-primitives = { path = "crates/alpen/zkvm-primitives" }
 reth-bench = { path = "bin/reth-bench" }
 reth-auto-seal-consensus = { path = "crates/consensus/auto-seal" }
 reth-basic-payload-builder = { path = "crates/payload/basic" }
@@ -347,7 +349,9 @@ reth-optimism-rpc = { path = "crates/optimism/rpc" }
 reth-payload-builder = { path = "crates/payload/builder" }
 reth-payload-primitives = { path = "crates/payload/primitives" }
 reth-payload-validator = { path = "crates/payload/validator" }
-reth-primitives = { path = "crates/primitives", default-features = false, features = ["std"] }
+reth-primitives = { path = "crates/primitives", default-features = false, features = [
+    "std",
+] }
 reth-primitives-traits = { path = "crates/primitives-traits", default-features = false }
 reth-provider = { path = "crates/storage/provider" }
 reth-prune = { path = "crates/prune/prune" }
