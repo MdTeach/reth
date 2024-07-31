@@ -25,8 +25,10 @@ use alloy_eips::eip1559::BaseFeeParams;
 use alloy_rlp::BufMut;
 use anyhow::anyhow;
 use reth_primitives::{
-    revm_primitives::Account, Address, Bloom, Header, Receipt, ReceiptWithBloom, Transaction,
-    TransactionSigned, TxKind as TransactionKind, U256,
+    constants::{GWEI_TO_WEI, MAXIMUM_EXTRA_DATA_SIZE, MINIMUM_GAS_LIMIT},
+    revm_primitives::Account,
+    Address, Bloom, Header, Receipt, ReceiptWithBloom, Transaction, TransactionSigned,
+    TxKind as TransactionKind, U256,
 };
 use reth_trie_common::root::ordered_trie_root_with_encoder;
 use revm::{
@@ -38,19 +40,13 @@ use revm::{
 use std::{mem, mem::take};
 
 /// The divisor for the gas limit bound.
-///
-/// Reference: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/header.rs#L752
 pub const GAS_LIMIT_DIVISOR: u64 = 1024;
 
-/// The minimum gas limit.
-///
-/// Reference: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/constants/mod.rs#L65
-pub const MINIMUM_GAS_LIMIT: u64 = 5000;
-
-/// The maximum number of extra data bytes.
-///
-/// Reference: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/constants/mod.rs#L19
-pub const MAXIMUM_EXTRA_DATA_SIZE: usize = 32;
+#[derive(Clone)]
+pub struct EvmConfig {
+    pub chain_id: u64,
+    pub spec_id: SpecId,
+}
 
 /// A processor that executes EVM transactions.
 #[derive(Clone)]
@@ -63,6 +59,9 @@ pub struct EvmProcessor<D> {
 
     /// The header to be finalized.
     pub header: Option<Header>,
+
+    /// Evm config
+    pub evm_config: EvmConfig,
 }
 
 impl<D> EvmProcessor<D> {
@@ -111,12 +110,12 @@ impl<D> EvmProcessor<D> {
 
         // Check for an increase in gas limit beyond the allowed threshold.
         if header.gas_limit > parent_gas_limit {
-            if header.gas_limit - parent_gas_limit >= parent_gas_limit / 1024 {
+            if header.gas_limit - parent_gas_limit >= parent_gas_limit / GAS_LIMIT_DIVISOR {
                 panic!("Gas limit invalid increase");
             }
         }
         // Check for a decrease in gas limit beyond the allowed threshold.
-        else if parent_gas_limit - header.gas_limit >= parent_gas_limit / 1024 {
+        else if parent_gas_limit - header.gas_limit >= parent_gas_limit / GAS_LIMIT_DIVISOR {
             panic!("Gas limit invalid decrease");
         }
         // Check if the self gas limit is below the minimum required limit.
@@ -163,12 +162,11 @@ where
 
     /// Processes each transaction and collect receipts and storage changes.
     pub fn execute(&mut self) {
-        let gwei_to_wei: U256 = U256::from(1_000_000_000);
-        let spec_id = SpecId::SHANGHAI;
+        let gwei_to_wei: U256 = U256::from(GWEI_TO_WEI);
         let mut evm = Evm::builder()
-            .with_spec_id(spec_id)
+            .with_spec_id(self.evm_config.spec_id)
             .modify_cfg_env(|cfg_env| {
-                cfg_env.chain_id = 1;
+                cfg_env.chain_id = self.evm_config.chain_id;
             })
             .modify_block_env(|blk_env| {
                 blk_env.number = self.header.as_mut().unwrap().number.try_into().unwrap();
@@ -259,9 +257,7 @@ where
         h.logs_bloom = logs_bloom;
         h.gas_used = cumulative_gas_used.try_into().unwrap();
 
-        // TODO: fixme
         self.db = Some(evm.context.evm.db.clone());
-        // self.db = Some(evm.context.evm.db);
     }
 }
 

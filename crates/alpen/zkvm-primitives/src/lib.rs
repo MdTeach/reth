@@ -22,12 +22,28 @@ pub mod processor;
 
 use crate::mpt::{MptNode, StorageEntry};
 
+use alloy_primitives::FixedBytes;
+use db::InMemoryDBHelper;
+use mpt::keccak;
+use processor::{EvmConfig, EvmProcessor};
 use reth_primitives::{Address, Bytes, Header, TransactionSignedNoHash, Withdrawal, B256};
+use revm::InMemoryDB;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-/// Necessary information to prove the execution of Ethereum blocks inside SP1.
+/// Public Parameters that proof asserts
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ELProofPublicParams {
+    pub block_idx: u64,
+    pub prev_blockhash: FixedBytes<32>,
+    pub new_blockhash: FixedBytes<32>,
+    pub new_state_root: FixedBytes<32>,
+    pub txn_root: FixedBytes<32>,
+    pub withdrawals: Vec<FixedBytes<32>>,
+}
+
+/// Necessary information to prove the execution of the RETH block.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ZKVMInput {
     /// The Keccak 256-bit hash of the parent block's header, in its entirety.
@@ -70,31 +86,54 @@ pub struct ZKVMInput {
     pub withdrawals: Vec<Withdrawal>,
 }
 
+/// Executes the block with the given input and EVM configuration, returning public parameters.
+pub fn process_block_transaction(
+    mut input: ZKVMInput,
+    evm_config: EvmConfig,
+) -> ELProofPublicParams {
+    // Calculate the previous block hash
+    let previous_block_hash = B256::from(keccak(alloy_rlp::encode(input.parent_header.clone())));
+
+    // Initialize the in-memory database
+    let db = match InMemoryDB::initialize(&mut input) {
+        Ok(database) => database,
+        Err(e) => panic!("Failed to initialize database: {:?}", e),
+    };
+
+    // Create an EVM processor and execute the block
+    let mut evm_processor =
+        EvmProcessor::<InMemoryDB> { input, db: Some(db), header: None, evm_config };
+
+    evm_processor.initialize();
+    evm_processor.execute();
+    evm_processor.finalize();
+
+    // Extract the header and compute the new block hash
+    let block_header = evm_processor.header.unwrap(); // Ensure header exists before unwrap
+    let new_block_hash = B256::from(keccak(alloy_rlp::encode(block_header.clone())));
+
+    // Construct the public parameters for the proof
+    ELProofPublicParams {
+        block_idx: block_header.number,
+        new_blockhash: new_block_hash,
+        new_state_root: block_header.state_root,
+        prev_blockhash: previous_block_hash,
+        txn_root: block_header.transactions_root,
+        withdrawals: Vec::new(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-
-    use db::InMemoryDBHelper;
-    use processor::EvmProcessor;
-    use revm::InMemoryDB;
-
     use super::*;
+    use revm::primitives::SpecId;
+    use std::fs::File;
+    const EVM_CONFIG: EvmConfig = EvmConfig { chain_id: 12345, spec_id: SpecId::SHANGHAI };
 
     #[test]
     fn block_stf_test() {
         let file = File::open("1.bin").expect("file");
-        let mut input: ZKVMInput = bincode::deserialize_from(file).expect("failed");
-
-        // Initialize the database.
-        let db = InMemoryDB::initialize(&mut input).unwrap();
-
-        // Execute the block.
-        let mut executor = EvmProcessor::<InMemoryDB> { input, db: Some(db), header: None };
-
-        executor.initialize();
-        executor.execute();
-        executor.finalize();
-
-        let _ = executor.header.unwrap().state_root;
+        let input: ZKVMInput = bincode::deserialize_from(file).expect("failed");
+        let _op = process_block_transaction(input, EVM_CONFIG);
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fs::File, io::Write, sync::Arc};
 
 use alloy_rpc_types::EIP1186AccountProofResponse;
 use eyre::eyre;
@@ -19,7 +19,10 @@ pub async fn prover_input_exex<Node: FullNodeComponents>(
             ExExNotification::ChainCommitted { new } => {
                 let tip_height = new.tip().number;
                 let input = extract_zkvm_input(&ctx, new)?;
-                println!("got the proof <>\n <>\n <>\n");
+
+                let mut file = File::create(format!("{}.bin", 1)).expect("Unable to open the file");
+                let bin = bincode::serialize(&input).unwrap();
+                let res = file.write_all(&bin).unwrap();
 
                 ctx.events.send(ExExEvent::FinishedHeight(tip_height))?;
             }
